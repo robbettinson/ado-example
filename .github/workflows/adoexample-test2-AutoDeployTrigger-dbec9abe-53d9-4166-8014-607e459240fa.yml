@@ -1,0 +1,49 @@
+name: Trigger auto deployment for adoexample-test2
+
+# When this action will be executed
+on:
+  # Automatically trigger it when detected changes in repo
+  push:
+    branches: 
+      [ main ]
+    paths:
+    - '**'
+    - '.github/workflows/adoexample-test2-AutoDeployTrigger-dbec9abe-53d9-4166-8014-607e459240fa.yml'
+
+  # Allow manual trigger 
+  workflow_dispatch:      
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    permissions: 
+      id-token: write #This is required for requesting the OIDC JWT Token
+      contents: read #Required when GH token is used to authenticate with private repo
+
+    steps:
+      - name: Checkout to the branch
+        uses: actions/checkout@v2
+
+      - name: Azure Login
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.ADOEXAMPLETEST2_AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.ADOEXAMPLETEST2_AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.ADOEXAMPLETEST2_AZURE_SUBSCRIPTION_ID }}
+
+      - name: Build and push container image to registry
+        uses: azure/container-apps-deploy-action@v2
+        with:
+          appSourcePath: ${{ github.workspace }}/webserver-docker
+          _dockerfilePathKey_: _dockerfilePath_
+          _targetLabelKey_: _targetLabel_
+          registryUrl: bahagtempacrfenteq.azurecr.io
+          registryUsername: ${{ secrets.ADOEXAMPLETEST2_REGISTRY_USERNAME }}
+          registryPassword: ${{ secrets.ADOEXAMPLETEST2_REGISTRY_PASSWORD }}
+          containerAppName: adoexample-test2
+          resourceGroup: temp-rg
+          imageToBuild: bahagtempacrfenteq.azurecr.io/adoexample-test2:${{ github.sha }}
+          _buildArgumentsKey_: |
+            _buildArgumentsValues_
+
+
